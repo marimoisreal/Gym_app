@@ -45,4 +45,24 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class);
+    }
+
+    public function getRouteKeyName() // So that Laravel understands that you need to search for a user by slug, and not by ID
+    {
+        return 'slug';
+    }
+
+
+    public function memberships()// One person can have many memberships(history)
+    {
+        return $this->hasMany(Membership::class);
+    }
+
+    public function role()// One person has one role
+    {
+        return $this->belongsTo((Role::class));
+    }
 }

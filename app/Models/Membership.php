@@ -13,7 +13,7 @@ class Membership extends Model
 
     public function membershipType()
     {
-        return $this->belongsTo(MembershipType::class);
+        return $this->belongsTo(MembershipType::class, 'membership_type_id');
     }
 
 }
