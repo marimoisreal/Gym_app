@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use App\Models\User;
 
@@ -29,7 +30,8 @@ class AdminUserController extends Controller
      */
     public function create()
     {
-        //
+        $roles = Role::all();
+        return view('admin.users.create', compact('roles'));
     }
 
     /**
@@ -42,6 +44,7 @@ class AdminUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users', // Check for unique email in users table
             'password' => 'required|string|min:8',
+            'role_id' => 'required|exists:roles,id',
 
         ]);
         // 2. If validaition not pass, redirect back with errors (handled automatically by Laravel)
@@ -50,6 +53,7 @@ class AdminUserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']), // Hash the password
+            'role_id' => $validated['role_id'],
         ]);
 
         return redirect()->route('admin.users.index')->with('success', 'User created successfully!');
@@ -67,17 +71,30 @@ class AdminUserController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(User $user)// Laravel by himself finds the user by slug because of the getRouteKeyName method in User model
+    public function edit($id)// Laravel by himself finds the user by slug because of the getRouteKeyName method in User model
     {
-        return view('admin.users.edit', compact('user'));
+        $user = User::findOrFail($id);
+        $roles = Role::all();
+        return view('admin.users.edit', compact('user', 'roles'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
-        //
+        $user = User::findOrFail($id);
+        // Validation - check incoming data
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'role_id' => 'required|exists:roles,id',
+        ]);
+        // Update user with validated data
+        $user->update($validated);
+
+        // redirect back to user list with success message
+        return redirect()->route('admin.users.index')->with('success', 'User updated successfully!');
     }
 
     /**
@@ -85,6 +102,8 @@ class AdminUserController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $user = User::findOrFail($id);
+        $user->delete();
+        return redirect()->route('admin.users.index')->with('success', 'User deleted');
     }
 }

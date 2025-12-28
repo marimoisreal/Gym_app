@@ -5,7 +5,7 @@
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Gym Members</h2>
-        <a href="#" class="btn btn-primary">Add New User</a>
+        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">Add New User</a>
     </div>
 
     <table class="table table-hover shadow-sm">
@@ -26,7 +26,8 @@
                     <td>{{ $user->email }}</td>
                     <td><span class="badge bg-info text-dark">{{ $user->role->name ?? 'No Role' }}</span></td>
                     <td><code>{{ $user->slug }}</code></td> {{-- Slug replaces an unclear id with a readable name --}}
-                    <td><a href="{{ route('users.edit', $user->slug) }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                    <td><a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                    </td>
                 </tr>
             @endforeach
         </tbody>

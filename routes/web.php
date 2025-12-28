@@ -11,4 +11,6 @@ Route::get('/', function () {
 
 Route::get('/memberships', [MembershipController::class, 'index'])->name('memberships.index');
 Route::post('/memberships', [MembershipController::class, 'store'])->name('memberships.store');
-Route::resource('admin/users', AdminUserController::class);
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::resource('users', AdminUserController::class);
+});
