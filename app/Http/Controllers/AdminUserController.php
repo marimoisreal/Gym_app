@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Subscription;
+use Carbon\Carbon;
 
 class AdminUserController extends Controller
 {
@@ -49,11 +51,20 @@ class AdminUserController extends Controller
         ]);
         // 2. If validaition not pass, redirect back with errors (handled automatically by Laravel)
         // 3. If validation pass, code create new user
-        User::create([
+        $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']), // Hash the password
             'role_id' => $validated['role_id'],
+            'slug' => \Illuminate\Support\Str::slug($validated['name']) . '-' . rand(100, 999),
+        ]);
+
+        Subscription::create([
+            'user_id' => $user->id, // Connect subscription to the newly created user
+            'start_date' => Carbon::now(), // Today/now
+            'end_date' => Carbon::now()->addMonth(), // Exactly one month later
+            'type' => 'monthly',
+            'price' => 0, // Set to 0 for now, later we can add a price field in the form
         ]);
 
         return redirect()->route('admin.users.index')->with('success', 'User created successfully!');
@@ -89,10 +100,30 @@ class AdminUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'role_id' => 'required|exists:roles,id',
+            'end_date' => 'nullable|date',
         ]);
         // Update user with validated data
-        $user->update($validated);
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role_id' => $validated['role_id'],
+        ]);
 
+        if ($request->filled('end_date')) {
+            $user->subscription()->updateOrCreate(
+                ['user_id' => $user->id], // Condition to find existing subscription
+                [
+                    'end_date' => $validated['end_date'],
+                    'start_date' => $user->subscription->start_date ?? now(), // Keep existing start_date or set to now 
+                    'type' => 'monthly', // Default type
+                    'price' => $user->subscription->price ?? 0,
+                ]
+            );
+        }
+        // If end_date is empty, delete subscription
+        else {
+            $user->subscription()->delete();
+        }
         // redirect back to user list with success message
         return redirect()->route('admin.users.index')->with('success', 'User updated successfully!');
     }
