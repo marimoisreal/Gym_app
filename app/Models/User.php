@@ -68,4 +68,8 @@ class User extends Authenticatable
     {
         return 'slug';
     }
+    public function subscription()
+    {
+        return $this->hasOne(Subscription::class);
+    }
 }

@@ -33,5 +33,13 @@ class DatabaseSeeder extends Seeder
             'role_id' => 2, // 2 - Member
             'slug' => 'ivan-ivanov'
         ]);
+
+        \App\Models\Subscription::create([
+            'user_id' => 2, 
+            'start_date' => now(),
+            'end_date' => now()->addMonth(), // 1 month subscription
+            'type' => 'monthly',
+            'price' => 50.00,
+        ]);
     }
 }
