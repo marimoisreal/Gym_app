@@ -7,7 +7,41 @@
         <h2>Gym Members</h2>
         <a href="{{ route('admin.users.create') }}" class="btn btn-primary">Add New User</a>
     </div>
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h6 class="text-muted">Total</h6>
+                    <h3>{{ $stats['total'] }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h6 class="text-muted">Active Now</h6>
+                    <h3>{{ $stats['active'] }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h6 class="text-muted">Expired</h6>
+                    <h3>{{ $stats['expired'] }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <form action="{{ route('admin.users.index') }}" method="GET" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Search by name..."
+                value="{{ request('search') }}">
+            <button class="btn btn-outline-primary" type="submit">Search</button>
+            <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary">Reset</a>
+        </div>
+    </form>
     <table class="table table-hover shadow-sm align-middle">
         <thead class="table-dark">
             <tr>
@@ -15,7 +49,13 @@
                 <th>Email</th>
                 <th>Role</th>
                 <th>Slug</th>
-                <th>Subscription</th>
+                <th><a href="{{ route('admin.users.index', [
+        'sort' => 'subscription',
+        'direction' => request('direction') === 'asc' ? 'desc' : 'asc',
+        'search' => request('search'),
+        'role' => request('role')
+    ]) }}" class="text-decoration-none text-white d-block">Subscription{!! request('sort') === 'subscription' ? (request('direction') === 'asc' ? '↑' : '↓') : '' !!}</a>
+                </th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -47,4 +87,5 @@
             @endforeach
         </tbody>
     </table>
+
 @endsection
