@@ -16,15 +16,41 @@ class AdminUserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::query();
+        $query = User::query()->select('users.*') // Select all user fields 
+            ->leftJoin('subscriptions', 'users.id', '=', 'subscriptions.user_id')->with(['role', 'subscription']);
         // You can add filtering, sorting, and pagination logic here as needed
-        if ($request->has('role')) {
-            $query->where('role_id', $request->role);
+        if ($request->filled('search')) {
+            $query->where('users.name', 'like', '%' . $request->search . '%')
+                ->orWhere('users.email', 'like', '%' . $request->search . '%');
         }
+
+        if ($request->filled('role')) {
+            $query->where('users.role_id', $request->role);
+        }
+
+        if ($request->get('sort') === 'subscription') {
+            $direction = $request->get('direction') === 'desc' ? 'DESC' : 'ASC';
+
+            // Sorting by subscription end_date, placing users without subscriptions at the end
+            $query->orderByRaw("subscriptions.end_date $direction");
+        } else {
+            $query->orderBy('users.name', 'asc');
+        }
+
+        $stats = [
+            'total' => User::count(),
+            'active' => Subscription::where('end_date', '>=', now()->startOfDay())->count(),
+            'expired' => User::whereDoesntHave('subscription')
+                ->orWhereHas('subscription', function ($q) {
+                    $q->where('end_date', '<', now()->startOfDay());
+                })->count(),
+        ];
+
         // Name sorting
         $users = $query->orderBy('name', 'asc')->get();
         // Return the view with users data
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', compact('users', 'stats'));
+
     }
 
     /**
