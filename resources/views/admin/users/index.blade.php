@@ -69,14 +69,15 @@
                         <span class="badge rounded-pill bg-info text-dark">{{ $user->role->name ?? 'No Role' }}</span>
                     </td>
                     <td><code>{{ $user->slug }}</code></td>
-                    <td>
-                        @if($user->subscription)
-                            <span
-                                class="fw-medium {{ $user->subscription->end_date->isToday() || $user->subscription->end_date->isFuture() ? 'text-success' : 'text-danger' }}">
-                                ● {{ $user->subscription->end_date->format('d.m.Y') }}
+                    <td class="py-3 px-4">
+                        @if($user->role->name === 'admin' || $user->role->name === 'trainer')
+                            <span class="badge bg-info text-dark">Unlimited</span>
+                        @elseif($user->subscription)
+                            <span class="fw-medium {{ $user->subscription->end_date->isToday() || $user->subscription->end_date->isFuture() ? 'text-success' : 'text-danger' }}">
+                                {{ $user->subscription->end_date->format('d.m.Y') }}
                             </span>
                         @else
-                            <span class="text-muted small italic">No subscription</span>
+                            <span class="text-muted small">No subscription</span>
                         @endif
                     </td>
                     <td>
