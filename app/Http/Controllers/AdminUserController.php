@@ -39,11 +39,18 @@ class AdminUserController extends Controller
 
         $stats = [
             'total' => User::count(),
-            'active' => Subscription::where('end_date', '>=', now()->startOfDay())->count(),
-            'expired' => User::whereDoesntHave('subscription')
-                ->orWhereHas('subscription', function ($q) {
+            'active' => User::whereHas('role', function ($q) {
+                $q->whereIn('name', ['admin', 'trainer']);
+            })->orWhereHas('subscription', function ($q) {
+                $q->where('end_date', '>=', now()->startOfDay());
+            })->count(),
+            'expired' => User::whereHas('role', function ($q) {
+                $q->whereNotIn('name', ['admin', 'trainer']);
+            })->where(function ($query) {
+                $query->whereDoesntHave('subscription')->orWhereHas('subscription', function ($q) {
                     $q->where('end_date', '<', now()->startOfDay());
-                })->count(),
+                });
+            })->count(),
         ];
 
         // Name sorting

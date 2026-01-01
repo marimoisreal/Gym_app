@@ -36,22 +36,54 @@
                             </select>
                             @error('role_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
-                        <div>
-                            <label for="end_date" class="block text-sm font-medium text-gray-700">Subscription Expiry
-                                Date</label>
-                            <input type="date" name="end_date" id="end_date"
-                                value="{{ old('end_date', $user->subscription ? $user->subscription->end_date->format('Y-m-d') : '') }}"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('end_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                            <p class="text-gray-400 text-xs mt-1 italic text-right">Leave empty if user has no subscription
-                            </p>
+                        <div class="mb-3">
+                            <label for="end_date" class="form-label text-black">Subscription End Date</label>
+                            <input type="date" name="end_date" id="end_date" 
+                                class="form-control" 
+                                value="{{ $user->subscription ? $user->subscription->end_date->format('Y-m-d') : '' }}">
+                            
+                            <div class="mt-2 d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-light text-black" onclick="addTime(1)">+1 Day</button>
+                                <button type="button" class="btn btn-sm btn-outline-light text-black" onclick="addTime(7)">+1 Week</button>
+                                <button type="button" class="btn btn-sm btn-outline-light text-black" onclick="addTime(30)">+1 Month</button>
+                                <button type="button" class="btn btn-sm btn-outline-light text-black" onclick="addTime(365)">+1 Year</button>
+
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="resetDate()">Reset Date</button>
+                            </div>
                         </div>
+
+                        <script>
+                            function addTime(days) 
+                            {
+                                let input = document.getElementById('end_date');
+                                let currentDate = new Date();
+
+                                // If in the input there's a date and it's in the future,
+                                // If the date is not present or it's in the past — extend from "today"
+                                if (input.value) {
+                                    let selectedDate = new Date(input.value);
+                                    if (selectedDate > currentDate) {
+                                        currentDate = selectedDate;
+                                    }
+                                }
+
+                                currentDate.setDate(currentDate.getDate() + days);
+                                input.value = currentDate.toISOString().split('T')[0];
+                            }
+
+                            function resetDate() {
+                                document.getElementById('end_date').value = '';
+                            }
+                        </script>
+
                         <div class="flex items-center gap-4 pt-4">
                             <button type="submit"
                                 class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
                                 Save Changes
                             </button>
+                            <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Cancel</a>
                         </div>
+
                     </form>
                     <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" class="mt-3"
                         onsubmit="return confirm('Are you sure?')">
