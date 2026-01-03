@@ -60,10 +60,6 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div>
             <a class="navbar-brand" href="#">Gym System</a>
-            <div>
-                <a class="nav-link" href="{{ route('admin.users.index') }}">Users</a>
-                <a class="nav-link" href="#">Memberships</a>
-            </div>
         </div>
     </nav>
 
