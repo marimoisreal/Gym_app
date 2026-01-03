@@ -143,9 +143,9 @@
                 <div class="input-group input-group-lg shadow">
                     <input type="text" name="search" class="form-control search-input" 
                            placeholder="Search members..." value="{{ request('search') }}">
-                    <button class="btn btn-primary px-5" type="submit">Search</button>
+                    <button class="btn btn-primary px-5" type="submit"><span class="material-symbols-outlined">search</span>Search</button>
                     @if(request('search'))
-                        <a href="{{ route('admin.users.index') }}" class="btn btn-secondary d-flex align-items-center">Reset</a>
+                        <a href="{{ route('admin.users.index') }}" class="btn btn-secondary d-flex align-items-center"><span class="material-symbols-outlined">cancel</span>Reset</a>
                     @endif
                 </div>
             </form>
@@ -186,7 +186,7 @@
                         </td>
                         <td class="text-end px-4">
                             <a href="{{ route('admin.users.edit', $user->id) }}" 
-                               class="btn btn-sm btn-outline-dark px-3 w-100">Manage</a>
+                               class="btn btn-sm btn-outline-dark px-3 w-100">Manage<span class="material-symbols-outlined">personedit</span></a>
                         </td>
                     </tr>
                 @endforeach
