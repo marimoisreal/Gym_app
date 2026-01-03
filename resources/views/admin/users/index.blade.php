@@ -186,7 +186,7 @@
                         </td>
                         <td class="text-end px-4">
                             <a href="{{ route('admin.users.edit', $user->id) }}" 
-                               class="btn btn-sm btn-outline-dark px-3 w-100">Manage</a>
+                               class="btn btn-sm btn-outline-dark px-3 w-100">Manage<span class="material-symbols-outlined">personedit</span></a>
                         </td>
                     </tr>
                 @endforeach
