@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Subscription;
+use Carbon\Carbon;
 
 class AdminUserController extends Controller
 {
@@ -14,15 +16,41 @@ class AdminUserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::query();
+        $query = User::query()->select('users.*') // Select all user fields 
+            ->leftJoin('subscriptions', 'users.id', '=', 'subscriptions.user_id')->with(['role', 'subscription']);
         // You can add filtering, sorting, and pagination logic here as needed
-        if ($request->has('role')) {
-            $query->where('role_id', $request->role);
+        if ($request->filled('search')) {
+            $query->where('users.name', 'like', '%' . $request->search . '%')
+                ->orWhere('users.email', 'like', '%' . $request->search . '%');
         }
+
+        if ($request->filled('role')) {
+            $query->where('users.role_id', $request->role);
+        }
+
+        if ($request->get('sort') === 'subscription') {
+            $direction = $request->get('direction') === 'desc' ? 'DESC' : 'ASC';
+
+            // Sorting by subscription end_date, placing users without subscriptions at the end
+            $query->orderByRaw("subscriptions.end_date $direction");
+        } else {
+            $query->orderBy('users.name', 'asc');
+        }
+
+        $stats = [
+            'total' => User::count(),
+            'active' => Subscription::where('end_date', '>=', now()->startOfDay())->count(),
+            'expired' => User::whereDoesntHave('subscription')
+                ->orWhereHas('subscription', function ($q) {
+                    $q->where('end_date', '<', now()->startOfDay());
+                })->count(),
+        ];
+
         // Name sorting
         $users = $query->orderBy('name', 'asc')->get();
         // Return the view with users data
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', compact('users', 'stats'));
+
     }
 
     /**
@@ -49,11 +77,20 @@ class AdminUserController extends Controller
         ]);
         // 2. If validaition not pass, redirect back with errors (handled automatically by Laravel)
         // 3. If validation pass, code create new user
-        User::create([
+        $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']), // Hash the password
             'role_id' => $validated['role_id'],
+            'slug' => \Illuminate\Support\Str::slug($validated['name']) . '-' . rand(100, 999),
+        ]);
+
+        Subscription::create([
+            'user_id' => $user->id, // Connect subscription to the newly created user
+            'start_date' => Carbon::now(), // Today/now
+            'end_date' => Carbon::now()->addMonth(), // Exactly one month later
+            'type' => 'monthly',
+            'price' => 0, // Set to 0 for now, later we can add a price field in the form
         ]);
 
         return redirect()->route('admin.users.index')->with('success', 'User created successfully!');
@@ -89,10 +126,30 @@ class AdminUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'role_id' => 'required|exists:roles,id',
+            'end_date' => 'nullable|date',
         ]);
         // Update user with validated data
-        $user->update($validated);
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role_id' => $validated['role_id'],
+        ]);
 
+        if ($request->filled('end_date')) {
+            $user->subscription()->updateOrCreate(
+                ['user_id' => $user->id], // Condition to find existing subscription
+                [
+                    'end_date' => $validated['end_date'],
+                    'start_date' => $user->subscription->start_date ?? now(), // Keep existing start_date or set to now 
+                    'type' => 'monthly', // Default type
+                    'price' => $user->subscription->price ?? 0,
+                ]
+            );
+        }
+        // If end_date is empty, delete subscription
+        else {
+            $user->subscription()->delete();
+        }
         // redirect back to user list with success message
         return redirect()->route('admin.users.index')->with('success', 'User updated successfully!');
     }
