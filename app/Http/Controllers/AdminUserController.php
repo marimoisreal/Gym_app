@@ -17,7 +17,7 @@ class AdminUserController extends Controller
     public function index(Request $request)
     {
         $query = User::query()->select('users.*') // Select all user fields 
-            ->leftJoin('subscriptions', 'users.id', '=', 'subscriptions.user_id')->with(['role', 'subscription']);
+            ->leftJoin('subscriptions', 'users.id', '=', 'subscriptions.user_id')->with(['role', 'subscriptions']);
         // You can add filtering, sorting, and pagination logic here as needed
         if ($request->filled('search')) {
             $query->where('users.name', 'like', '%' . $request->search . '%')
@@ -28,7 +28,7 @@ class AdminUserController extends Controller
             $query->where('users.role_id', $request->role);
         }
 
-        if ($request->get('sort') === 'subscription') {
+        if ($request->get('sort') === 'subscriptions') {
             $direction = $request->get('direction') === 'desc' ? 'DESC' : 'ASC';
 
             // Sorting by subscription end_date, placing users without subscriptions at the end
@@ -41,13 +41,13 @@ class AdminUserController extends Controller
             'total' => User::count(),
             'active' => User::whereHas('role', function ($q) {
                 $q->whereIn('name', ['admin', 'trainer']);
-            })->orWhereHas('subscription', function ($q) {
+            })->orWhereHas('subscriptions', function ($q) {
                 $q->where('end_date', '>=', now()->startOfDay());
             })->count(),
             'expired' => User::whereHas('role', function ($q) {
                 $q->whereNotIn('name', ['admin', 'trainer']);
             })->where(function ($query) {
-                $query->whereDoesntHave('subscription')->orWhereHas('subscription', function ($q) {
+                $query->whereDoesntHave('subscriptions')->orWhereHas('subscriptions', function ($q) {
                     $q->where('end_date', '<', now()->startOfDay());
                 });
             })->count(),
@@ -143,19 +143,21 @@ class AdminUserController extends Controller
         ]);
 
         if ($request->filled('end_date')) {
-            $user->subscription()->updateOrCreate(
+            $lastSub = $user->subscriptions()->latest()->first();
+
+            $user->subscriptions()->updateOrCreate(
                 ['user_id' => $user->id], // Condition to find existing subscription
                 [
                     'end_date' => $validated['end_date'],
-                    'start_date' => $user->subscription->start_date ?? now(), // Keep existing start_date or set to now 
-                    'type' => 'monthly', // Default type
-                    'price' => $user->subscription->price ?? 0,
+                    'start_date' => $lastSub->start_date ?? now(),
+                    'type' => 'monthly',
+                    'price' => $lastSub->price ?? 0,
                 ]
             );
         }
         // If end_date is empty, delete subscription
         else {
-            $user->subscription()->delete();
+            $user->subscriptions()->delete();
         }
         // redirect back to user list with success message
         return redirect()->route('admin.users.index')->with('success', 'User updated successfully!');

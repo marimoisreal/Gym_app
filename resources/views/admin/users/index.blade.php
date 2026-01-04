@@ -159,7 +159,7 @@
                     <th class="py-3 px-4">Name</th>
                     <th class="py-3">Email</th>
                     <th class="py-3">Role</th>
-                    <th class="py-3"><a class="text-decoration-none text-black" href="{{ route('admin.users.index', ['sort' => 'subscription', 'direction' => request('direction') === 'asc' ? 'desc' : 'asc', 'search' => request('search')]) }}">
+                    <th class="py-3"><a class="text-decoration-none text-black" href="{{ route('admin.users.index', ['sort' => 'subscriptions', 'direction' => request('direction') === 'asc' ? 'desc' : 'asc', 'search' => request('search')]) }}">
                     Subscription <span class="ms-1 text-decoration-none text-black">{{ request('direction') === 'asc' ? '↑' : '↓' }}</span></a>
                 </th>
                     <th class="py-3 text-center px-4" style="width: 15%">Actions</th>
@@ -174,16 +174,25 @@
                             <span class="badge bg-dark">{{ strtoupper($user->role->name ?? 'User') }}</span>
                         </td>
                         <td>
-                            @if(in_array($user->role->name, ['admin', 'trainer']))
-                                <span class="text-primary fw-bold">∞ Unlimited</span>
-                            @elseif($user->subscription)
-                                <span class="{{ $user->subscription->end_date->isFuture() ? 'text-success' : 'text-danger' }} fw-bold">
-                                    {{ $user->subscription->end_date->format('d.m.Y') }}
+                        @if(in_array($user->role->name, ['admin', 'trainer']))
+                            <span class="text-primary fw-bold">∞ Unlimited</span>
+                        @elseif($user->subscriptions->isNotEmpty())
+                            @php
+                                $latestSub = $user->subscriptions->sortByDesc('end_date')->first();
+                            @endphp
+                            @if($latestSub && $latestSub->end_date->isFuture())
+                                <span class="text-success fw-bold">
+                                    {{ $latestSub->end_date->format('d.m.Y') }}
                                 </span>
                             @else
-                                <span class="text-muted">Not Active</span>
+                                <span class="text-danger fw-bold">
+                                    {{ $latestSub ? $latestSub->end_date->format('d.m.Y') : 'Expired' }}
+                                </span>
                             @endif
-                        </td>
+                        @else
+                            <span class="text-muted">Not Active</span>
+                        @endif
+                    </td>
                         <td class="text-end px-4">
                             <a href="{{ route('admin.users.edit', $user->id) }}" 
                                class="btn btn-sm btn-outline-dark px-3 w-100">Manage<span class="material-symbols-outlined">personedit</span></a>
