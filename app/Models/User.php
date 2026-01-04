@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -21,6 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'slug',
+        'role_id',
     ];
 
     /**
@@ -45,8 +48,28 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-    public function roles() {
-        return $this->belongsToMany(Role::class);
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
     }
 
+    protected static function boot()
+    {
+        parent::boot();
+        // Before creating a user, generate a slug from the name
+        static::creating(function ($user) {
+            if (empty($user->slug)) {
+                $user->slug = Str::slug($user->name);
+            }
+        });
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
 }
